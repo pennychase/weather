@@ -1,15 +1,20 @@
 defmodule Weather.Worker do
 
-  @spec temperature_of(binary()) :: <<_::48, _::_*8>>
+  @units  %{ imperial: %{temp: "˚F", precip: "in", wind: "miles per hour"},
+              metric: %{temp: "˚C", precip: "mm", wind: "meters per second"},
+              standard: %{temp: "˚K", precip: "mm", wind: "meters per second"}
+         }
+
+  @spec temperature_of(binary()) :: {:error, binary()} | {:ok, binary()}
   def temperature_of(location, units\\"imperial") do
     result = url_for(location, units) |> HTTPoison.get |> parse_response
     case result do
-      {:ok, temp} -> "#{location}: #{temp} \u00b0C"
+      {:ok, temp} -> "#{location}: #{temp} #{@units[String.to_atom(units)][:temp]}"
       {:error, msg}-> "Error retrieving temperature for #{location}: #{msg}"
     end
   end
 
-  @spec url_for(binary(), binary()) :: <<_::64, _::_*8>>
+  @spec url_for(binary(), binary()) :: binary()
   def url_for(location, units) do
     location = URI.encode(location)
     units = URI.encode(units)
@@ -39,6 +44,7 @@ defmodule Weather.Worker do
     end
   end
 
+  @spec apikey() :: nil | binary()
   def apikey do
     System.get_env("OPENWEATHER_API_KEY")
   end
